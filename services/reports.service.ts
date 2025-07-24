@@ -1,91 +1,120 @@
-import { DollarSign, CreditCard, Users, TrendingUp } from "lucide-react"
-
 export class ReportsService {
-  static async getReportsData(userRole: string, dateRange: string, reportType: string) {
-    // Simulate API delay
+  static async getReportsData(userRole: string, dateRange = "30d") {
+    console.log("📊 ReportsService: Getting reports data for role:", userRole)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    const baseMetrics = [
-      {
-        title: "Total Revenue",
-        value: "$125,430.89",
-        change: "+12.5% vs last period",
-        trend: "up",
-        icon: DollarSign,
+    const baseReports = {
+      revenue: {
+        title: "Revenue Analytics",
+        data: [
+          { date: "2024-01-01", amount: 12500 },
+          { date: "2024-01-02", amount: 15200 },
+          { date: "2024-01-03", amount: 18900 },
+          { date: "2024-01-04", amount: 22100 },
+          { date: "2024-01-05", amount: 19800 },
+        ],
+        total: 88500,
+        growth: 15.2,
       },
-      {
-        title: "Transactions",
-        value: "3,247",
-        change: "+8.2% vs last period",
-        trend: "up",
-        icon: CreditCard,
+      transactions: {
+        title: "Transaction Volume",
+        data: [
+          { date: "2024-01-01", count: 145 },
+          { date: "2024-01-02", count: 167 },
+          { date: "2024-01-03", count: 189 },
+          { date: "2024-01-04", count: 201 },
+          { date: "2024-01-05", count: 178 },
+        ],
+        total: 880,
+        growth: 8.7,
       },
-      {
-        title: "Active Customers",
-        value: "1,856",
-        change: "+15.3% vs last period",
-        trend: "up",
-        icon: Users,
+      customers: {
+        title: "Customer Growth",
+        data: [
+          { date: "2024-01-01", count: 1200 },
+          { date: "2024-01-02", count: 1215 },
+          { date: "2024-01-03", count: 1234 },
+          { date: "2024-01-04", count: 1256 },
+          { date: "2024-01-05", count: 1278 },
+        ],
+        total: 1278,
+        growth: 6.5,
       },
-      {
-        title: "Conversion Rate",
-        value: "94.8%",
-        change: "+2.1% vs last period",
-        trend: "up",
-        icon: TrendingUp,
-      },
-    ]
+    }
 
-    const topPerformers = [
-      { name: "Premium Subscription", type: "Product", value: "$45,230", growth: "+18%" },
-      { name: "John Smith", type: "Customer", value: "$12,450", growth: "+25%" },
-      { name: "E-commerce Store", type: "Channel", value: "$38,920", growth: "+12%" },
-      { name: "Mobile App", type: "Platform", value: "$28,340", growth: "+8%" },
-    ]
+    // Filter reports based on role permissions
+    return this.filterReportsForRole(baseReports, userRole)
+  }
 
-    // Filter metrics based on user role
-    const metrics = this.filterMetricsForRole(baseMetrics, userRole)
+  static async getTransactionReports(filters: any = {}) {
+    console.log("💳 ReportsService: Getting transaction reports with filters:", filters)
+    await new Promise((resolve) => setTimeout(resolve, 600))
 
     return {
-      metrics,
-      chartData: this.generateChartData(dateRange),
-      topPerformers,
+      summary: {
+        totalTransactions: 2350,
+        successfulTransactions: 2308,
+        failedTransactions: 42,
+        successRate: 98.2,
+        totalVolume: 456789.5,
+      },
+      byStatus: [
+        { status: "completed", count: 2308, percentage: 98.2 },
+        { status: "failed", count: 42, percentage: 1.8 },
+      ],
+      byPaymentMethod: [
+        { method: "Credit Card", count: 1645, percentage: 70.0 },
+        { method: "Bank Transfer", count: 470, percentage: 20.0 },
+        { method: "Digital Wallet", count: 235, percentage: 10.0 },
+      ],
     }
   }
 
-  static async exportReport(reportType: string, dateRange: string, format: string) {
-    // Simulate export process
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+  static async getCustomerReports() {
+    console.log("👥 ReportsService: Getting customer reports")
+    await new Promise((resolve) => setTimeout(resolve, 500))
 
-    // In a real implementation, this would generate and download the report
-    console.log(`Exporting ${reportType} report for ${dateRange} in ${format} format`)
+    return {
+      totalCustomers: 1234,
+      newCustomers: 89,
+      activeCustomers: 1156,
+      topCustomers: [
+        { name: "John Doe", transactions: 45, volume: 12500 },
+        { name: "Jane Smith", transactions: 38, volume: 9800 },
+        { name: "Bob Johnson", transactions: 32, volume: 8900 },
+      ],
+      customerGrowth: [
+        { month: "Jan", count: 1200 },
+        { month: "Feb", count: 1234 },
+        { month: "Mar", count: 1278 },
+      ],
+    }
+  }
+
+  private static filterReportsForRole(reports: any, role: string) {
+    if (role === "VIEWER") {
+      // Viewers can't see revenue details
+      delete reports.revenue
+    }
+
+    if (role === "STAFF") {
+      // Staff can only see basic transaction data
+      return {
+        transactions: reports.transactions,
+      }
+    }
+
+    return reports
+  }
+
+  static async exportReport(reportType: string, format = "csv") {
+    console.log(`📤 ReportsService: Exporting ${reportType} report as ${format}`)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
 
     return {
       success: true,
-      downloadUrl: `/reports/export/${reportType}_${dateRange}.${format}`,
+      downloadUrl: `/api/reports/export/${reportType}.${format}`,
+      filename: `${reportType}_${new Date().toISOString().split("T")[0]}.${format}`,
     }
-  }
-
-  private static filterMetricsForRole(metrics: any[], role: string) {
-    if (role === "VIEWER") {
-      return metrics.filter((metric) => metric.title !== "Total Revenue")
-    }
-    return metrics
-  }
-
-  private static generateChartData(dateRange: string) {
-    // Generate sample chart data based on date range
-    const days = dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90 : 365
-    const data = []
-
-    for (let i = 0; i < days; i++) {
-      data.push({
-        date: new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-        revenue: Math.floor(Math.random() * 5000) + 1000,
-        transactions: Math.floor(Math.random() * 100) + 20,
-      })
-    }
-
-    return data
   }
 }

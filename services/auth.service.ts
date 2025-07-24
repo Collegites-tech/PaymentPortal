@@ -2,19 +2,16 @@ export class AuthService {
   private static readonly SUPER_ADMIN_EMAIL = "admin@payflow.com"
   private static readonly SUPER_ADMIN_PASSWORD = "SuperAdmin123!"
 
-  static async login(email: string, password: string) {
-    console.log("🔐 AuthService: Login attempt")
-    console.log(`   User ID/Email: ${email}`)
-
-    // Simulate API delay
+  static async login(emailOrUserId: string, password: string) {
+    console.log("🔐 AuthService: Login attempt for:", emailOrUserId)
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     // Check super admin credentials
-    if (email === this.SUPER_ADMIN_EMAIL && password === this.SUPER_ADMIN_PASSWORD) {
+    if (emailOrUserId === this.SUPER_ADMIN_EMAIL && password === this.SUPER_ADMIN_PASSWORD) {
       const user = {
         id: "super_admin_001",
         name: "Super Admin",
-        email: email,
+        email: emailOrUserId,
         role: "PARENT_ADMIN",
         permissions: this.getRolePermissions("PARENT_ADMIN"),
         isInvited: false,
@@ -24,13 +21,20 @@ export class AuthService {
 
       localStorage.setItem("user", JSON.stringify(user))
       localStorage.setItem("authToken", "super_admin_token_123")
-
+      console.log("✅ Super Admin login successful")
       return { success: true, user, message: "Login successful" }
     }
 
-    // Check invited users
+    // Check invited users - can login with either email or user ID
     const invitedUsers = this.getInvitedUsers()
-    const invitedUser = invitedUsers.find((u: any) => u.email === email && u.tempPassword === password)
+    console.log("🔍 Checking invited users:", invitedUsers.length, "users found")
+
+    const invitedUser = invitedUsers.find((u: any) => {
+      const emailMatch = u.email === emailOrUserId && u.tempPassword === password
+      const userIdMatch = u.id === emailOrUserId && u.tempPassword === password
+      console.log(`   Checking user ${u.email} (${u.id}): email match=${emailMatch}, userId match=${userIdMatch}`)
+      return emailMatch || userIdMatch
+    })
 
     if (invitedUser) {
       const user = {
@@ -40,10 +44,11 @@ export class AuthService {
 
       localStorage.setItem("user", JSON.stringify(user))
       localStorage.setItem("authToken", `token_${user.id}`)
-
+      console.log("✅ Invited user login successful:", user.email)
       return { success: true, user, message: "Login successful" }
     }
 
+    console.log("❌ Login failed - invalid credentials")
     return { success: false, message: "Invalid credentials" }
   }
 
@@ -82,7 +87,7 @@ export class AuthService {
 
   static getRolePermissions(role: string): string[] {
     const permissions = {
-      PARENT_ADMIN: ["all", "api_access"],
+      PARENT_ADMIN: ["all", "api_access", "manage_team", "manage_roles", "delete_users"],
       SUB_ADMIN: [
         "view_dashboard",
         "view_reports",
@@ -100,6 +105,10 @@ export class AuthService {
         "manage_customers",
         "view_payouts",
         "view_reports",
+        "manage_staff",
+        "generate_qr",
+        "manage_api_keys",
+        "manage_webhooks",
       ],
       REFUND_MANAGER: ["view_dashboard", "process_refunds", "view_transactions"],
       VIEWER: ["view_dashboard", "view_reports", "view_transactions"],
@@ -111,6 +120,8 @@ export class AuthService {
         "create_payments",
         "manage_customers",
         "api_access",
+        "manage_api_keys",
+        "manage_webhooks",
       ],
       SUPPORT: ["view_dashboard", "view_transactions", "manage_customers"],
     }
@@ -149,5 +160,17 @@ export class AuthService {
     localStorage.setItem("invitedUsers", JSON.stringify(existingUsers))
 
     return { uniqueId, tempPassword }
+  }
+
+  static async deleteInvitedUser(userId: string) {
+    console.log("🗑️ AuthService: Deleting invited user:", userId)
+    const invitedUsers = this.getInvitedUsers()
+    const updatedUsers = invitedUsers.filter((user: any) => user.id !== userId)
+    localStorage.setItem("invitedUsers", JSON.stringify(updatedUsers))
+    return { success: true, message: "User deleted successfully" }
+  }
+
+  static getInvitedUsersList() {
+    return this.getInvitedUsers()
   }
 }

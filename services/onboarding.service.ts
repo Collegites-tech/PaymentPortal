@@ -1,81 +1,121 @@
-import { AuthService } from "./auth.service"
-
 export class OnboardingService {
-  static async getInviteData(token: string) {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+  static async getMerchantOnboardingData(token: string) {
+    console.log("🏪 OnboardingService: Getting merchant onboarding data for token:", token)
+    await new Promise((resolve) => setTimeout(resolve, 600))
 
-    // Simulate token validation and data retrieval
-    const mockInviteData = {
+    return {
       token,
-      email: "merchant@example.com",
-      role: "MERCHANT",
-      invitedBy: "Super Admin",
-      companyName: "PayFlow Inc.",
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      isValid: true,
+      merchantInfo: {
+        businessName: "",
+        businessType: "",
+        industry: "",
+        website: "",
+        description: "",
+      },
+      contactInfo: {
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        address: {
+          street: "",
+          city: "",
+          state: "",
+          zipCode: "",
+          country: "",
+        },
+      },
+      businessDetails: {
+        taxId: "",
+        registrationNumber: "",
+        yearEstablished: "",
+        employeeCount: "",
+      },
+      bankingInfo: {
+        accountHolderName: "",
+        accountNumber: "",
+        routingNumber: "",
+        bankName: "",
+      },
+      currentStep: 1,
+      totalSteps: 4,
+      isComplete: false,
     }
-
-    if (!mockInviteData.isValid) {
-      throw new Error("Invalid or expired invitation")
-    }
-
-    return mockInviteData
   }
 
-  static async completeMerchantOnboarding(token: string, formData: any) {
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+  static async saveMerchantOnboardingStep(token: string, step: number, data: any) {
+    console.log(`💾 OnboardingService: Saving merchant onboarding step ${step}`)
+    await new Promise((resolve) => setTimeout(resolve, 800))
 
-    // Generate unique credentials
-    const credentials = await AuthService.generateInviteCredentials(formData.email, "MERCHANT")
+    // In a real app, this would save to a database
+    const storageKey = `merchant_onboarding_${token}`
+    const existingData = JSON.parse(localStorage.getItem(storageKey) || "{}")
 
-    // Create merchant profile
-    const merchantProfile = {
-      id: credentials.uniqueId,
-      ...formData,
-      status: "active",
-      onboardingCompleted: true,
-      createdAt: new Date().toISOString(),
+    const updatedData = {
+      ...existingData,
+      [`step${step}`]: data,
+      currentStep: Math.max(existingData.currentStep || 1, step),
+      lastUpdated: new Date().toISOString(),
     }
 
-    // Store merchant profile
-    const existingProfiles = this.getStoredMerchantProfiles()
-    existingProfiles.push(merchantProfile)
-    localStorage.setItem("merchantProfiles", JSON.stringify(existingProfiles))
-
-    // Create user account
-    const userData = {
-      id: credentials.uniqueId,
-      name: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      role: "MERCHANT",
-      permissions: AuthService.getRolePermissions("MERCHANT"),
-      isInvited: true,
-      hasChangedPassword: false,
-      tempPassword: credentials.tempPassword,
-      merchantProfile: merchantProfile,
-      status: "active",
-    }
-
-    // Store user data
-    localStorage.setItem("user", JSON.stringify(userData))
-    localStorage.setItem("authToken", `token_${userData.id}`)
+    localStorage.setItem(storageKey, JSON.stringify(updatedData))
 
     return {
       success: true,
-      user: userData,
-      credentials,
+      message: `Step ${step} saved successfully`,
+      nextStep: step < 4 ? step + 1 : null,
     }
   }
 
-  static async getMerchantProfile(userId: string) {
-    await new Promise((resolve) => setTimeout(resolve, 300))
+  static async completeMerchantOnboarding(token: string) {
+    console.log("✅ OnboardingService: Completing merchant onboarding")
+    await new Promise((resolve) => setTimeout(resolve, 1200))
 
-    const profiles = this.getStoredMerchantProfiles()
-    return profiles.find((profile) => profile.id === userId)
+    const storageKey = `merchant_onboarding_${token}`
+    const onboardingData = JSON.parse(localStorage.getItem(storageKey) || "{}")
+
+    // Create merchant account
+    const merchantAccount = {
+      id: `MERCHANT_${Date.now()}`,
+      token,
+      status: "active",
+      onboardingData,
+      completedAt: new Date().toISOString(),
+      approvalStatus: "approved", // In real app, this might be "pending_review"
+    }
+
+    localStorage.setItem(`merchant_account_${token}`, JSON.stringify(merchantAccount))
+
+    return {
+      success: true,
+      merchantId: merchantAccount.id,
+      message: "Merchant onboarding completed successfully",
+      redirectUrl: "/dashboard",
+    }
   }
 
-  private static getStoredMerchantProfiles() {
-    const stored = localStorage.getItem("merchantProfiles")
-    return stored ? JSON.parse(stored) : []
+  static async getOnboardingProgress(token: string) {
+    console.log("📊 OnboardingService: Getting onboarding progress")
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
+    const storageKey = `merchant_onboarding_${token}`
+    const data = JSON.parse(localStorage.getItem(storageKey) || "{}")
+
+    const steps = [
+      { id: 1, title: "Business Information", completed: !!data.step1 },
+      { id: 2, title: "Contact Details", completed: !!data.step2 },
+      { id: 3, title: "Business Details", completed: !!data.step3 },
+      { id: 4, title: "Banking Information", completed: !!data.step4 },
+    ]
+
+    const completedSteps = steps.filter((step) => step.completed).length
+    const progress = (completedSteps / steps.length) * 100
+
+    return {
+      steps,
+      currentStep: data.currentStep || 1,
+      progress,
+      isComplete: completedSteps === steps.length,
+    }
   }
 }
