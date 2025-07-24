@@ -102,7 +102,7 @@ export class RoleService {
     return { success: true, message: "Role deleted successfully" }
   }
 
-  static async getRolePermissions() {
+  static async getAllPermissions() {
     return [
       { id: "view_dashboard", name: "View Dashboard", category: "General" },
       { id: "view_reports", name: "View Reports", category: "Analytics" },
