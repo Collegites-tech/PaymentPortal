@@ -200,7 +200,7 @@ export default function ProfilePage() {
         merchantId: user.id,
       })
 
-      // Generate invite link
+      // Generate invite token
       const inviteToken = `staff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       const inviteLink = `${window.location.origin}/invite/${inviteToken}`
 

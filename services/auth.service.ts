@@ -17,12 +17,12 @@ export class AuthService {
         isInvited: false,
         hasChangedPassword: true,
         createdAt: new Date().toISOString(),
-      }
+      } 
 
       localStorage.setItem("user", JSON.stringify(user))
       localStorage.setItem("authToken", "super_admin_token_123")
       console.log("✅ Super Admin login successful")
-      return { success: true, user, message: "Login successful" }
+      return { success: true, user, message: "Login successful"} 
     }
 
     // Check invited users - can login with either email or user ID
@@ -32,14 +32,14 @@ export class AuthService {
     const invitedUser = invitedUsers.find((u: any) => {
       const emailMatch = u.email === emailOrUserId && u.tempPassword === password
       const userIdMatch = u.id === emailOrUserId && u.tempPassword === password
-      console.log(`   Checking user ${u.email} (${u.id}): email match=${emailMatch}, userId match=${userIdMatch}`)
+      console.log(`   Checking user ${u.email} (${u.id}): email match=${emailMatch}, userId match=${userIdMatch}`) 
       return emailMatch || userIdMatch
     })
-
+              
     if (invitedUser) {
       const user = {
         ...invitedUser,
-        permissions: this.getRolePermissions(invitedUser.role),
+        permissions: this.getRolePermissions(invitedUser.role), 
       }
 
       localStorage.setItem("user", JSON.stringify(user))
@@ -108,7 +108,7 @@ export class AuthService {
         "manage_staff",
         "generate_qr",
         "manage_api_keys",
-        "manage_webhooks",
+        "manage_webhooks", 
       ],
       REFUND_MANAGER: ["view_dashboard", "process_refunds", "view_transactions"],
       VIEWER: ["view_dashboard", "view_reports", "view_transactions"],
@@ -141,7 +141,7 @@ export class AuthService {
 
   static async generateInviteCredentials(email: string, role: string) {
     const uniqueId = `USR${Date.now()}`
-    const tempPassword = Math.random().toString(36).slice(-12) + "A1!"
+    const tempPassword = Math.random().toString(36).slice(-12) + "A1!" 
 
     const invitedUser = {
       id: uniqueId,

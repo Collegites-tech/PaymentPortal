@@ -117,4 +117,77 @@ export class RoleService {
       { id: "api_access", name: "API Access", category: "Technical" },
     ]
   }
+
+  static async getRoleConfig(role: string) {
+    const roleConfigs = {
+      PARENT_ADMIN: {
+        dashboardPath: '/dashboard',
+        features: ['all'],
+        permissions: ['read', 'write', 'delete', 'admin', 'manage_all']
+      },
+      SUB_ADMIN: {
+        dashboardPath: '/Roles/sub-admin/dashboard',
+        features: ['view_reports', 'process_refunds', 'view_transactions', 'create_payments', 'manage_customers', 'view_payouts'],
+        permissions: ['read', 'write', 'process_refunds']
+      },
+      MERCHANT: {
+        dashboardPath: '/Roles/merchant/dashboard',
+        features: ['view_dashboard', 'create_payments', 'view_transactions', 'manage_customers', 'view_payouts', 'view_reports', 'manage_staff'],
+        permissions: ['read', 'write', 'manage_staff']
+      },
+      REFUND_MANAGER: {
+        dashboardPath: '/Roles/refund-manager/dashboard',
+        features: ['view_dashboard', 'process_refunds', 'view_transactions'],
+        permissions: ['read', 'process_refunds']
+      },
+      VIEWER: {
+        dashboardPath: '/Roles/viewer/dashboard',
+        features: ['view_dashboard', 'view_reports', 'view_transactions'],
+        permissions: ['read']
+      },
+      STAFF: {
+        dashboardPath: '/Roles/staff/dashboard',
+        features: ['view_dashboard', 'view_transactions'],
+        permissions: ['read']
+      },
+      DEVELOPER: {
+        dashboardPath: '/Roles/developer/dashboard',
+        features: ['view_dashboard', 'view_reports', 'view_transactions', 'create_payments', 'manage_customers', 'api_access'],
+        permissions: ['read', 'write', 'api_access']
+      },
+      SUPPORT: {
+        dashboardPath: '/Roles/support/dashboard',
+        features: ['view_dashboard', 'view_transactions', 'manage_customers'],
+        permissions: ['read', 'support']
+      }
+    }
+    
+    return roleConfigs[role as keyof typeof roleConfigs] || null
+  }
+
+  static async getAvailableRoles() {
+    return [
+      { value: 'SUB_ADMIN', label: 'Sub Administrator', description: 'Limited admin access with specific permissions' },
+      { value: 'MERCHANT', label: 'Merchant', description: 'Store and payment management with staff control' },
+      { value: 'REFUND_MANAGER', label: 'Refund Manager', description: 'Handle refunds and transaction disputes' },
+      { value: 'VIEWER', label: 'Viewer', description: 'Read-only access to reports and transactions' },
+      { value: 'STAFF', label: 'Staff', description: 'Basic access to view transactions' },
+      { value: 'DEVELOPER', label: 'Developer', description: 'API access and development tools' },
+      { value: 'SUPPORT', label: 'Support', description: 'Customer support and assistance' }
+    ]
+  }
+
+  static getRoleBadgeColor(role: string) {
+    const colors = {
+      PARENT_ADMIN: "bg-purple-600 hover:bg-purple-700",
+      SUB_ADMIN: "bg-blue-600 hover:bg-blue-700",
+      DEVELOPER: "bg-green-600 hover:bg-green-700",
+      SUPPORT: "bg-yellow-600 hover:bg-yellow-700",
+      REFUND_MANAGER: "bg-orange-600 hover:bg-orange-700",
+      VIEWER: "bg-gray-600 hover:bg-gray-700",
+      STAFF: "bg-indigo-600 hover:bg-indigo-700",
+      MERCHANT: "bg-emerald-600 hover:bg-emerald-700",
+    }
+    return colors[role as keyof typeof colors] || "bg-slate-600 hover:bg-slate-700"
+  }
 }

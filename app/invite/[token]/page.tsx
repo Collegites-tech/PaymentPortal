@@ -1,5 +1,4 @@
 "use client"
-
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
@@ -8,7 +7,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Eye, EyeOff, CheckCircle, Mail, Phone, User, ArrowRight, LogIn, Loader2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import {
+  Eye,
+  EyeOff,
+  CheckCircle,
+  Mail,
+  Phone,
+  User,
+  ArrowRight,
+  LogIn,
+  Loader2,
+  Shield,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { MicroservicesService } from "@/services/microservices.service"
 import { AuthService } from "@/services/auth.service"
@@ -23,7 +34,7 @@ export default function InviteAcceptPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [inviteData, setInviteData] = useState<any>(null)
 
-  // Login form states
+  // Login states
   const [loginId, setLoginId] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -36,12 +47,9 @@ export default function InviteAcceptPage() {
   useEffect(() => {
     const verifyToken = async () => {
       try {
-        console.log("🚀 Starting invite token verification process...")
         const data = await MicroservicesService.verifyInviteToken(params.token as string)
         setInviteData(data)
-        console.log("✅ Invite verification completed successfully")
       } catch (error) {
-        console.error("❌ Invite verification failed:", error)
         toast({
           title: "Invalid invite link",
           description: "This invite link is invalid or has expired.",
@@ -49,64 +57,93 @@ export default function InviteAcceptPage() {
         })
       }
     }
-
     verifyToken()
   }, [params.token, toast])
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role?.toUpperCase()) {
+      case "ADMIN":
+        return "bg-red-600 hover:bg-red-700"
+      case "MERCHANT":
+        return "bg-blue-600 hover:bg-blue-700"
+      case "STAFF":
+        return "bg-green-600 hover:bg-green-700"
+      case "REFUND_MANAGER":
+        return "bg-yellow-600 hover:bg-yellow-700"
+      case "DEVELOPER":
+        return "bg-purple-600 hover:bg-purple-700"
+      case "SUPPORT":
+        return "bg-pink-600 hover:bg-pink-700"
+      default:
+        return "bg-gray-600 hover:bg-gray-700"
+    }
+  }
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      console.log("🚀 STARTING ACCOUNT CREATION PROCESS")
-      console.log("=".repeat(60))
-
-      // Step 1: Prepare user data
       const userData = {
         firstName,
         lastName,
         email: inviteData.email,
-        role: inviteData.role,
+        role: inviteData.role, // ✅ always use invited role
         contactMethod,
         contactValue,
         inviteToken: params.token,
+        companyId: inviteData.companyId,
+        invitedBy: inviteData.invitedBy,
       }
 
-      console.log("📋 User Data Prepared:")
-      console.log(userData)
+      const credentials = await MicroservicesService.generateCredentials({
+        ...userData,
+        roleContext: {
+          assignedRole: inviteData.role,
+          permissions: inviteData.permissions || [],
+          companyId: inviteData.companyId,
+        },
+      })
 
-      // Step 2: Generate credentials via microservice
-      console.log("\n🔧 STEP 1: Generating credentials...")
-      const credentials = await MicroservicesService.generateCredentials(userData)
+      await MicroservicesService.createUserAccount(
+        {
+          ...userData,
+          roleAssignment: {
+            role: inviteData.role,
+            assignedBy: inviteData.invitedBy,
+            assignedAt: new Date().toISOString(),
+            companyId: inviteData.companyId,
+          },
+        },
+        credentials,
+      )
 
-      // Step 3: Create user account via microservice
-      console.log("\n👤 STEP 2: Creating user account...")
-      const userAccount = await MicroservicesService.createUserAccount(userData, credentials)
-
-      // Step 4: Send credentials via microservice
-      console.log("\n📧 STEP 3: Sending credentials...")
-      const notificationResult = await MicroservicesService.sendCredentials(
+      await MicroservicesService.sendCredentials(
         contactMethod,
         contactValue,
-        credentials,
+        {
+          ...credentials,
+          roleInfo: {
+            role: inviteData.role,
+            companyName: inviteData.companyName,
+            permissions: inviteData.permissions || [],
+          },
+        },
         userData,
       )
 
-      console.log("\n🎉 ACCOUNT CREATION PROCESS COMPLETED SUCCESSFULLY!")
-      console.log("=".repeat(60))
-
-      setGeneratedCredentials(credentials)
+      setGeneratedCredentials({
+        ...credentials,
+        assignedRole: inviteData.role,
+      })
       setStep("credentials")
+      setLoginId(credentials.uniqueId)
 
       toast({
-        title: "Account created successfully!",
-        description: `Your login credentials have been sent to your ${contactMethod}.`,
+        title: "Account created",
+        description: `Your ${inviteData.role} account has been created successfully.`,
       })
-
-      // Auto-fill login form with generated credentials for demo purposes
-      setLoginId(credentials.uniqueId)
     } catch (error) {
-      console.error("❌ ACCOUNT CREATION FAILED:", error)
       toast({
         title: "Account creation failed",
         description: "Failed to create account. Please try again.",
@@ -122,29 +159,17 @@ export default function InviteAcceptPage() {
     setIsLoggingIn(true)
 
     try {
-      console.log("🔐 ATTEMPTING LOGIN")
-      console.log(`   User ID: ${loginId}`)
-      console.log(`   Password: ${"*".repeat(password.length)}`)
-
       const result = await AuthService.login(loginId, password)
 
       if (result.success) {
-        console.log("✅ LOGIN SUCCESSFUL")
-        console.log(`   User: ${result.user.name}`)
-        console.log(`   Role: ${result.user.role}`)
-
         toast({
           title: "Login successful",
-          description: "Welcome to PayFlow!",
+          description: `Welcome as ${result.user.role}!`,
         })
 
-        if (result.user.role === "MERCHANT") {
-          router.push(`/onboarding/merchant/${params.token}`)
-        } else {
-          router.push("/dashboard")
-        }
+        //  Redirect dynamically to correct role dashboard
+        router.push(`/Roles/${result.user.role}/dashboard`)
       } else {
-        console.log("❌ LOGIN FAILED:", result.message)
         toast({
           title: "Login failed",
           description: result.message,
@@ -152,7 +177,6 @@ export default function InviteAcceptPage() {
         })
       }
     } catch (error) {
-      console.error("❌ LOGIN ERROR:", error)
       toast({
         title: "Login error",
         description: "An error occurred during login.",
@@ -164,7 +188,6 @@ export default function InviteAcceptPage() {
   }
 
   const handleForgotPassword = () => {
-    console.log("🔄 Password reset requested for:", loginId)
     toast({
       title: "Password reset",
       description: "Password reset instructions will be sent to your registered contact method.",
@@ -192,21 +215,27 @@ export default function InviteAcceptPage() {
                 <CheckCircle className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold text-white">Join PayFlow</CardTitle>
-              <p className="text-slate-400">
-                You've been invited to join {inviteData.companyName} as a {inviteData.role}
-              </p>
+              <p className="text-slate-400">You've been invited to join {inviteData.companyName}</p>
             </CardHeader>
             <CardContent>
-              <div className="mb-6 p-4 bg-slate-800 rounded-lg">
-                <p className="text-slate-300 text-sm">
-                  <strong>Email:</strong> {inviteData.email}
-                </p>
-                <p className="text-slate-300 text-sm">
-                  <strong>Role:</strong> {inviteData.role}
-                </p>
-                <p className="text-slate-300 text-sm">
-                  <strong>Invited by:</strong> {inviteData.invitedBy}
-                </p>
+              <div className="mb-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 text-sm">Email:</span>
+                    <span className="text-slate-200 text-sm font-medium">{inviteData.email}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 text-sm">Role:</span>
+                    <Badge className={`${getRoleBadgeColor(inviteData.role)} text-white`}>
+                      <Shield className="h-3 w-3 mr-1" />
+                      {inviteData.role}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 text-sm">Invited by:</span>
+                    <span className="text-slate-200 text-sm font-medium">{inviteData.invitedBy}</span>
+                  </div>
+                </div>
               </div>
 
               <form onSubmit={handleCreateAccount} className="space-y-4">
@@ -281,11 +310,11 @@ export default function InviteAcceptPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Creating Account...
+                      Creating {inviteData.role} Account...
                     </>
                   ) : (
                     <>
-                      Create Account & Send Credentials
+                      Create {inviteData.role} Account
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </>
                   )}
@@ -302,29 +331,29 @@ export default function InviteAcceptPage() {
                 <Mail className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold text-white">Credentials Sent!</CardTitle>
-              <p className="text-slate-400">Your login credentials have been sent to your {contactMethod}</p>
+              <p className="text-slate-400">
+                Your {inviteData.role} login credentials have been sent to your {contactMethod}
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 bg-slate-800 rounded-lg">
-                <p className="text-slate-300 text-sm mb-2">
-                  <strong>Sent to:</strong> {contactValue}
-                </p>
-                <p className="text-slate-400 text-xs mb-3">
-                  Check your {contactMethod === "email" ? "email inbox" : "text messages"} for your login credentials.
-                </p>
-                {generatedCredentials && (
-                  <div className="mt-3 p-3 bg-slate-700 rounded border-l-4 border-blue-500">
-                    <p className="text-xs text-slate-400 mb-1">For demo purposes, your credentials are:</p>
-                    <p className="text-sm text-slate-200">
-                      <strong>ID:</strong> {generatedCredentials.uniqueId}
-                    </p>
-                    <p className="text-sm text-slate-200">
-                      <strong>Password:</strong> {generatedCredentials.tempPassword}
-                    </p>
-                  </div>
-                )}
-              </div>
-
+              {generatedCredentials && (
+                <div className="mt-3 p-3 bg-slate-700 rounded border-l-4 border-blue-500">
+                  <p className="text-xs text-slate-400 mb-1">Demo Credentials:</p>
+                  <p className="text-sm text-slate-200">
+                    <strong>ID:</strong> {generatedCredentials.uniqueId}
+                  </p>
+                  <p className="text-sm text-slate-200">
+                    <strong>Password:</strong> {generatedCredentials.tempPassword}
+                  </p>
+                  <p className="text-sm text-slate-200 flex items-center">
+                    <strong>Role:</strong>
+                    <Badge className={`${getRoleBadgeColor(generatedCredentials.assignedRole)} ml-2 text-white`}>
+                      <Shield className="h-3 w-3 mr-1" />
+                      {generatedCredentials.assignedRole}
+                    </Badge>
+                  </p>
+                </div>
+              )}
               <Button onClick={() => setStep("login")} className="w-full bg-green-600 hover:bg-green-700">
                 <LogIn className="h-4 w-4 mr-2" />
                 Continue to Login
@@ -340,7 +369,14 @@ export default function InviteAcceptPage() {
                 <User className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold text-white">Login to PayFlow</CardTitle>
-              <p className="text-slate-400">Enter the credentials sent to your {contactMethod}</p>
+              <p className="text-slate-400">
+                Enter your{" "}
+                <Badge className={`${getRoleBadgeColor(inviteData.role)} mx-1 text-white`}>
+                  <Shield className="h-3 w-3 mr-1" />
+                  {inviteData.role}
+                </Badge>{" "}
+                credentials sent to your {contactMethod}
+              </p>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
@@ -388,10 +424,10 @@ export default function InviteAcceptPage() {
                   {isLoggingIn ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Logging in...
+                      Logging in as {inviteData.role}...
                     </>
                   ) : (
-                    "Login"
+                    `Login as ${inviteData.role}`
                   )}
                 </Button>
 

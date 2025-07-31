@@ -7,11 +7,19 @@ export class MicroservicesService {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 800))
 
-    // Mock invite data based on token
+    // Improved role detection based on token
+    let role = "STAFF"
+    if (token.toLowerCase().includes("admin")) role = "ADMIN"
+    else if (token.toLowerCase().includes("merchant")) role = "MERCHANT"
+    else if (token.toLowerCase().includes("refund")) role = "REFUND_MANAGER"
+    else if (token.toLowerCase().includes("developer")) role = "DEVELOPER"
+    else if (token.toLowerCase().includes("support")) role = "SUPPORT"
+    else if (token.toLowerCase().includes("viewer")) role = "VIEWER"
+
     const mockInviteData = {
       token,
       email: "newuser@company.com",
-      role: token.includes("merchant") ? "MERCHANT" : "STAFF",
+      role,
       invitedBy: "Super Admin",
       companyName: "PayFlow Inc.",
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),

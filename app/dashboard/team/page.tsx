@@ -1,44 +1,153 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { InviteMemberModal } from "@/components/invite-member-modal"
-import { UserPlus, Edit, Trash2, Check, X, Shield, Users, Activity } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { UserPlus, Mail, Copy, Trash2, Edit, Shield, Users, Activity, Check, X } from "lucide-react"
+import { AuthService } from "@/services/auth.service"
 
 export default function TeamManagementPage() {
-  const [showInviteModal, setShowInviteModal] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isInviting, setIsInviting] = useState(false)
+  const [inviteData, setInviteData] = useState({
+    name: "",
+    email: "",
+    role: "",
+  })
+  const { toast } = useToast()
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      setUser(JSON.parse(userData))
+    const loadData = async () => {
+      const currentUser = await AuthService.getCurrentUser()
+      if (!currentUser) return
+
+      setUser(currentUser)
+      
+      // Mock team members data
+      const mockTeamMembers = [
+        {
+          id: 1,
+          name: "John Doe",
+          email: "john@company.com",
+          role: "DEVELOPER",
+          status: "Active",
+          lastActive: "2 hours ago",
+          joined: "Jan 15, 2024",
+          inviteLink: `${window.location.origin}/invite/sample123?role=DEVELOPER`
+        },
+        {
+          id: 2,
+          name: "Sarah Wilson",
+          email: "sarah@company.com",
+          role: "SUPPORT",
+          status: "Active",
+          lastActive: "1 day ago",
+          joined: "Jan 10, 2024",
+          inviteLink: `${window.location.origin}/invite/sample456?role=SUPPORT`
+        },
+        {
+          id: 3,
+          name: "Mike Johnson",
+          email: "mike@company.com",
+          role: "REFUND_MANAGER",
+          status: "Pending",
+          lastActive: "Never",
+          joined: "Jan 20, 2024",
+          inviteLink: `${window.location.origin}/invite/sample789?role=REFUND_MANAGER`
+        }
+      ]
+      
+      setTeamMembers(mockTeamMembers)
+      setIsLoading(false)
     }
+    loadData()
   }, [])
 
-  const teamMembers = [
-    {
-      id: 1,
-      name: "John Developer",
-      email: "john@company.com",
-      role: "DEVELOPER",
-      status: "Active",
-      lastActive: "2 hours ago",
-      joined: "2024-01-10",
-    },
-    {
-      id: 2,
-      name: "Sarah Support",
-      email: "sarah@company.com",
-      role: "SUPPORT",
-      status: "Pending",
-      lastActive: "Never",
-      joined: "Pending",
-    },
+  const availableRoles = [
+    { value: 'SUB_ADMIN', label: 'Sub Administrator' },
+    { value: 'DEVELOPER', label: 'Developer' },
+    { value: 'SUPPORT', label: 'Support' },
+    { value: 'REFUND_MANAGER', label: 'Refund Manager' },
+    { value: 'VIEWER', label: 'Viewer' },
+    { value: 'STAFF', label: 'Staff' },
+    { value: 'MERCHANT', label: 'Merchant' }
   ]
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!inviteData.name || !inviteData.email || !inviteData.role) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsInviting(true)
+
+    try {
+      // Generate invite token
+      const inviteToken = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      const inviteLink = `${window.location.origin}/invite/${inviteToken}?role=${inviteData.role}`
+
+      // Here you would typically save the invite to your backend
+      // For now, we'll simulate it
+      const newMember = {
+        id: Date.now(),
+        ...inviteData,
+        status: "Pending",
+        lastActive: "Never",
+        joined: new Date().toLocaleDateString(),
+        inviteLink,
+        invitedAt: new Date().toISOString(),
+        invitedBy: user.name,
+      }
+
+      setTeamMembers([...teamMembers, newMember])
+      setInviteData({ name: "", email: "", role: "" })
+
+      // Copy invite link to clipboard
+      await navigator.clipboard.writeText(inviteLink)
+
+      toast({
+        title: "Invitation sent",
+        description: `Invite link copied to clipboard for ${inviteData.email}`,
+      })
+    } catch (error) {
+      toast({
+        title: "Invitation failed",
+        description: "Failed to send invitation. Please try again.",
+        variant: "destructive",
+      })
+    }
+
+    setIsInviting(false)
+  }
+
+  const handleCopyInviteLink = async (link: string) => {
+    try {
+      await navigator.clipboard.writeText(link)
+      toast({
+        title: "Link copied",
+        description: "Invite link copied to clipboard",
+      })
+    } catch (error) {
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy link to clipboard",
+        variant: "destructive",
+      })
+    }
+  }
 
   const rolePermissions = [
     {
@@ -143,6 +252,12 @@ export default function TeamManagementPage() {
         return "bg-purple-600 hover:bg-purple-700"
       case "VIEWER":
         return "bg-gray-600 hover:bg-gray-700"
+      case "SUB_ADMIN":
+        return "bg-orange-600 hover:bg-orange-700"
+      case "MERCHANT":
+        return "bg-emerald-600 hover:bg-emerald-700"
+      case "STAFF":
+        return "bg-indigo-600 hover:bg-indigo-700"
       default:
         return "bg-slate-600 hover:bg-slate-700"
     }
@@ -161,20 +276,88 @@ export default function TeamManagementPage() {
     }
   }
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-slate-800 rounded w-1/4 mb-2"></div>
+          <div className="h-4 bg-slate-800 rounded w-1/3"></div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Team Management</h1>
-          <p className="text-slate-400 mt-1">Manage team members and their access permissions</p>
+          <h1 className="text-4xl font-bold text-white">Team Management</h1>
+          <p className="text-slate-400 mt-2">Invite and manage team members with role-based access</p>
         </div>
-        {user?.role === "PARENT_ADMIN" && (
-          <Button onClick={() => setShowInviteModal(true)} className="bg-blue-600 hover:bg-blue-700">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Invite Member
-          </Button>
-        )}
       </div>
+
+      {/* Invite New Member */}
+      <Card className="bg-slate-900/50 border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center">
+            <UserPlus className="h-5 w-5 mr-2" />
+            Invite Team Member
+          </CardTitle>
+          <p className="text-slate-400 text-sm">Add new team members with specific roles and permissions</p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleInvite} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-slate-200">
+                  Full Name
+                </Label>
+                <Input
+                  id="name"
+                  value={inviteData.name}
+                  onChange={(e) => setInviteData((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="John Doe"
+                  className="bg-slate-800 border-slate-700 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-slate-200">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={inviteData.email}
+                  onChange={(e) => setInviteData((prev) => ({ ...prev, email: e.target.value }))}
+                  placeholder="john.doe@example.com"
+                  className="bg-slate-800 border-slate-700 text-white"
+                />
+              </div>
+              <div className="space-y-2 col-span-full">
+                <Label htmlFor="role" className="text-slate-200">
+                  Role
+                </Label>
+                <select
+                  id="role"
+                  value={inviteData.role}
+                  onChange={(e) => setInviteData((prev) => ({ ...prev, role: e.target.value }))}
+                  className="bg-slate-800 border-slate-700 text-white w-full px-3 py-2 rounded"
+                >
+                  <option value="">Select a role</option>
+                  {availableRoles.map(role => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <Button type="submit" disabled={isInviting} className="mt-4">
+              {isInviting ? "Sending..." : "Send Invitation"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="members" className="space-y-6">
         <TabsList className="bg-slate-800 border-slate-700">
@@ -234,6 +417,9 @@ export default function TeamManagementPage() {
                       </Button>
                       <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-800">
                         <Trash2 className="h-4 w-4 text-red-400" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-800" onClick={() => handleCopyInviteLink(member.inviteLink)}>
+                        <Copy className="h-4 w-4 text-blue-400" />
                       </Button>
                     </div>
                   </div>
@@ -329,7 +515,7 @@ export default function TeamManagementPage() {
         </TabsContent>
       </Tabs>
 
-      <InviteMemberModal open={showInviteModal} onClose={() => setShowInviteModal(false)} />
+      {/* <InviteMemberModal open={false} onClose={() => {}} inviterRole={user?.role} /> */}
     </div>
   )
 }

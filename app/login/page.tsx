@@ -50,7 +50,7 @@ export default function LoginPage() {
     } else {
       toast({
         title: "Login failed",
-        description: "Invalid credentials. Please try again.",
+        description: "Invalid credentials. Please try again.", 
         variant: "destructive",
       })
     }

@@ -1,0 +1,36 @@
+
+// Add this to your existing handleLogin function:
+
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setIsLoggingIn(true)
+
+  try {
+    const result = await AuthService.login(loginId, password, {
+      expectedRole: inviteData.role,
+      companyId: inviteData.companyId,
+    })
+
+    if (result.success) {
+      // Get role configuration
+      const roleConfig = await RoleService.getRoleConfig(result.user.role)
+      
+      if (roleConfig) {
+        // Redirect to role-specific dashboard
+        router.push(roleConfig.dashboardPath)
+      } else {
+        // Fallback to default dashboard
+        router.push("/dashboard")
+      }
+
+      toast({
+        title: "Login successful",
+        description: `Welcome to PayFlow as ${result.user.role}!`,
+      })
+    }
+  } catch (error) {
+    // ... error handling
+  }
+
+  setIsLoggingIn(false)
+}

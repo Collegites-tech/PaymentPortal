@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, Shield, AlertTriangle } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { ProfileService } from "@/services/profile.service"
 import { AuthService } from "@/services/auth.service"
@@ -26,25 +26,6 @@ export function PasswordChangeModal({ open, onClose }: PasswordChangeModalProps)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
-  const validatePassword = (password: string) => {
-    const minLength = 8
-    const hasUpperCase = /[A-Z]/.test(password)
-    const hasLowerCase = /[a-z]/.test(password)
-    const hasNumbers = /\d/.test(password)
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
-
-    return {
-      isValid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
-      errors: [
-        ...(password.length < minLength ? [`At least ${minLength} characters`] : []),
-        ...(!hasUpperCase ? ["One uppercase letter"] : []),
-        ...(!hasLowerCase ? ["One lowercase letter"] : []),
-        ...(!hasNumbers ? ["One number"] : []),
-        ...(!hasSpecialChar ? ["One special character"] : []),
-      ],
-    }
-  }
-
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -52,16 +33,6 @@ export function PasswordChangeModal({ open, onClose }: PasswordChangeModalProps)
       toast({
         title: "Password mismatch",
         description: "New passwords do not match. Please try again.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    const validation = validatePassword(newPassword)
-    if (!validation.isValid) {
-      toast({
-        title: "Weak password",
-        description: `Password must include: ${validation.errors.join(", ")}`,
         variant: "destructive",
       })
       return
@@ -77,7 +48,7 @@ export function PasswordChangeModal({ open, onClose }: PasswordChangeModalProps)
 
         toast({
           title: "Password updated successfully",
-          description: "Your password has been changed. Please remember your new password.",
+          description: "Your password has been changed.",
         })
 
         onClose()
@@ -93,43 +64,17 @@ export function PasswordChangeModal({ open, onClose }: PasswordChangeModalProps)
     setIsLoading(false)
   }
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault()
-    toast({
-      title: "Paste disabled",
-      description: "For security reasons, pasting is not allowed in password fields.",
-      variant: "destructive",
-    })
-  }
-
-  const passwordValidation = validatePassword(newPassword)
-
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md">
         <DialogHeader>
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-full flex items-center justify-center">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
             <div>
-              <DialogTitle className="text-xl font-bold">Security Required</DialogTitle>
-              <p className="text-slate-400 text-sm">Change your temporary password</p>
+              <DialogTitle className="text-xl font-bold">Change Password (Optional)</DialogTitle>
+              <p className="text-slate-400 text-sm">You may skip this step and continue using your current password.</p>
             </div>
           </div>
         </DialogHeader>
-
-        <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-600/30 rounded-lg p-4 mb-6">
-          <div className="flex items-start space-x-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5" />
-            <div>
-              <p className="text-yellow-200 text-sm font-medium">One-time password change required</p>
-              <p className="text-yellow-300/80 text-xs mt-1">
-                For security, invited users must change their temporary password on first login.
-              </p>
-            </div>
-          </div>
-        </div>
 
         <form onSubmit={handlePasswordChange} className="space-y-6">
           <div className="space-y-2">
@@ -142,10 +87,8 @@ export function PasswordChangeModal({ open, onClose }: PasswordChangeModalProps)
                 type={showCurrentPassword ? "text" : "password"}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                onPaste={handlePaste}
-                placeholder="Enter your temporary password"
+                placeholder="Current password"
                 className="bg-slate-800/50 border-slate-700 text-white pr-12"
-                required
               />
               <Button
                 type="button"
@@ -169,10 +112,8 @@ export function PasswordChangeModal({ open, onClose }: PasswordChangeModalProps)
                 type={showNewPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                onPaste={handlePaste}
-                placeholder="Create a strong password"
+                placeholder="New password"
                 className="bg-slate-800/50 border-slate-700 text-white pr-12"
-                required
               />
               <Button
                 type="button"
@@ -184,25 +125,6 @@ export function PasswordChangeModal({ open, onClose }: PasswordChangeModalProps)
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
-            {newPassword && (
-              <div className="mt-2 space-y-1">
-                <div className="flex items-center space-x-2">
-                  <div
-                    className={`w-2 h-2 rounded-full ${passwordValidation.isValid ? "bg-green-500" : "bg-red-500"}`}
-                  ></div>
-                  <span className={`text-xs ${passwordValidation.isValid ? "text-green-400" : "text-red-400"}`}>
-                    {passwordValidation.isValid ? "Strong password" : "Weak password"}
-                  </span>
-                </div>
-                {!passwordValidation.isValid && (
-                  <ul className="text-xs text-slate-400 ml-4 space-y-1">
-                    {passwordValidation.errors.map((error, index) => (
-                      <li key={index}>• {error}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -215,10 +137,8 @@ export function PasswordChangeModal({ open, onClose }: PasswordChangeModalProps)
                 type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                onPaste={handlePaste}
-                placeholder="Confirm your new password"
+                placeholder="Confirm new password"
                 className="bg-slate-800/50 border-slate-700 text-white pr-12"
-                required
               />
               <Button
                 type="button"
@@ -230,18 +150,25 @@ export function PasswordChangeModal({ open, onClose }: PasswordChangeModalProps)
                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
-            {confirmPassword && newPassword !== confirmPassword && (
-              <p className="text-xs text-red-400">Passwords do not match</p>
-            )}
           </div>
 
-          <Button
-            type="submit"
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-medium py-3"
-            disabled={isLoading || !passwordValidation.isValid || newPassword !== confirmPassword}
-          >
-            {isLoading ? "Updating Password..." : "Update Password"}
-          </Button>
+          <div className="flex justify-between gap-4">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              onClick={onClose}
+            >
+              Skip
+            </Button>
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-medium py-3"
+              disabled={isLoading || newPassword !== confirmPassword || !newPassword || !confirmPassword}
+            >
+              {isLoading ? "Updating..." : "Update Password"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
