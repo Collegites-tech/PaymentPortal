@@ -5,18 +5,51 @@ import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Plus, UserPlus, TrendingUp, Sparkles, Users, Settings, CreditCard, LifeBuoy, BarChart3, UserCircle, Menu, LogOut, DollarSign, Shield, FileText, Bell, Activity, UserCheck, Wallet, RefreshCw, Eye, Code, HeadphonesIcon } from "lucide-react"
+import { Plus, UserPlus, TrendingUp, Sparkles, Users, Settings, CreditCard, LifeBuoy, BarChart3, UserCircle, Menu, LogOut, DollarSign, Shield, FileText, Bell, Activity, UserCheck, Wallet, RefreshCw, Eye, Code, HeadphonesIcon, Download, Filter, Calendar, Zap, Key, Webhook, Building, PieChart, AlertTriangle } from "lucide-react"
 import { DashboardService } from "@/services/dashboard.service"
 import { AuthService } from "@/services/auth.service"
 import { useRouter } from "next/navigation"
 
-const sidebarLinks = [
-  { name: "Staff Management", icon: Users, href: "/dashboard/team" },
-  { name: "Settings", icon: Settings, href: "/dashboard/settings" },
-  { name: "Transactions", icon: CreditCard, href: "/dashboard/transactions" },
-  { name: "Support", icon: LifeBuoy, href: "/dashboard/support" },
-  { name: "Reports", icon: BarChart3, href: "/dashboard/reports" },
-]
+const getSidebarLinks = (role: string) => {
+  switch (role?.toUpperCase()) {
+    case "MERCHANT":
+      return [
+        { name: "Dashboard", href: `/Roles/${role}/dashboard`, icon: BarChart3 },
+        { name: "Payment Management", href: `/Roles/${role}/payments`, icon: CreditCard },
+        { name: "Staff Management", href: `/Roles/${role}/staff`, icon: Users },
+        { name: "Transactions & Reports", href: `/Roles/${role}/transactions`, icon: FileText },
+        { name: "Insights & Analytics", href: `/Roles/${role}/analytics`, icon: PieChart },
+        { name: "Payouts & Settlements", href: `/Roles/${role}/payouts`, icon: Wallet },
+        { name: "Business Settings", href: `/Roles/${role}/settings`, icon: Settings },
+        { name: "Support Center", href: `/Roles/${role}/support`, icon: HeadphonesIcon },
+        { name: "API & Webhooks", href: `/Roles/${role}/api`, icon: Webhook },
+      ]
+    case "STAFF":
+      return [
+        { name: "Daily Tasks", href: `/Roles/${role}/tasks`, icon: Activity },
+        { name: "View Transactions", href: `/Roles/${role}/transactions`, icon: Eye },
+        { name: "Create Payments", href: `/Roles/${role}/payments/create`, icon: Plus },
+        { name: "Customer Support", href: `/Roles/${role}/support`, icon: HeadphonesIcon },
+        { name: "Quick Reports", href: `/Roles/${role}/reports`, icon: FileText },
+        { name: "Help Center", href: `/Roles/${role}/help`, icon: LifeBuoy },
+      ]
+    case "DEVELOPER":
+      return [
+        { name: "API Management", href: `/Roles/${role}/api`, icon: Code },
+        { name: "System Monitoring", href: `/Roles/${role}/monitoring`, icon: Activity },
+        { name: "Error Tracking", href: `/Roles/${role}/errors`, icon: Shield },
+        { name: "Database", href: `/Roles/${role}/database`, icon: Settings },
+        { name: "Integration Testing", href: `/Roles/${role}/testing`, icon: FileText },
+        { name: "Documentation", href: `/Roles/${role}/docs`, icon: FileText },
+      ]
+    default:
+      return [
+        { name: "Dashboard", href: `/Roles/${role}/dashboard`, icon: BarChart3 },
+        { name: "Settings", href: `/Roles/${role}/settings`, icon: Settings },
+        { name: "Support", href: `/Roles/${role}/support`, icon: HeadphonesIcon },
+      ]
+  }
+}
 
 export default function RoleDashboardPage() {
   const [user, setUser] = useState<any>(null)
@@ -80,20 +113,22 @@ export default function RoleDashboardPage() {
         return {
           title: "Merchant Dashboard",
           description: "Business operations and payment management",
-          color: "from-blue-600 to-blue-700",
-          icon: Wallet,
+          color: "from-emerald-600 to-emerald-700",
+          icon: Building,
           features: [
-            { name: "Payment Processing", icon: CreditCard, description: "Process customer payments" },
-            { name: "Transaction History", icon: FileText, description: "View transaction records" },
-            { name: "Revenue Analytics", icon: TrendingUp, description: "Track revenue metrics" },
-            { name: "Customer Management", icon: Users, description: "Manage customer data" },
-            { name: "Payout Management", icon: DollarSign, description: "Handle payouts" },
-            { name: "Staff Management", icon: UserCheck, description: "Manage staff members" }
+            { name: "Payment Management", icon: CreditCard, description: "Create, track, and refund payments" },
+            { name: "Staff Management", icon: Users, description: "Invite and manage staff members" },
+            { name: "Transactions & Reports", icon: FileText, description: "Download CSV/PDF reports" },
+            { name: "Insights & Analytics", icon: PieChart, description: "Volume, success rate, chargeback ratio" },
+            { name: "Payouts & Settlements", icon: Wallet, description: "Request payouts and view history" },
+            { name: "Business Settings", icon: Settings, description: "Profile, KYC, settlement account" },
+            { name: "Support Center", icon: HeadphonesIcon, description: "Raise tickets to PSP support" },
+            { name: "API & Webhooks", icon: Webhook, description: "Manage API keys and integrations" }
           ],
           stats: [
             { title: "Today's Revenue", value: "$12,450", icon: DollarSign, change: "+15%" },
-            { title: "Transactions", value: "234", icon: CreditCard, change: "+8%" },
-            { title: "Customers", value: "1,890", icon: Users, change: "+12%" },
+            { title: "Total Transactions", value: "234", icon: CreditCard, change: "+8%" },
+            { title: "Active Staff", value: "12", icon: Users, change: "+2%" },
             { title: "Pending Payouts", value: "$3,200", icon: Wallet, change: "+5%" }
           ]
         }
@@ -105,7 +140,7 @@ export default function RoleDashboardPage() {
           color: "from-green-600 to-green-700",
           icon: Users,
           features: [
-            { name: "Customer Service", icon: HeadphonesIcon, description: "Handle customer inquiries" },
+            { name: "Customer Support", icon: HeadphonesIcon, description: "Handle customer inquiries" },
             { name: "Transaction Support", icon: CreditCard, description: "Assist with transactions" },
             { name: "Daily Reports", icon: FileText, description: "Generate daily reports" },
             { name: "Task Management", icon: Activity, description: "Manage assigned tasks" },
@@ -154,57 +189,13 @@ export default function RoleDashboardPage() {
             { name: "Error Tracking", icon: Shield, description: "Track and resolve errors" },
             { name: "Database Management", icon: Settings, description: "Manage database operations" },
             { name: "Integration Testing", icon: FileText, description: "Test system integrations" },
-            { name: "Documentation", icon: FileText, description: "Maintain technical docs" }
+            { name: "Documentation", icon: FileText, description: "Access developer documentation" }
           ],
           stats: [
             { title: "API Calls", value: "45.2K", icon: Code, change: "+18%" },
             { title: "System Uptime", value: "99.95%", icon: Activity, change: "+0.05%" },
             { title: "Error Rate", value: "0.02%", icon: Shield, change: "-0.01%" },
             { title: "Response Time", value: "120ms", icon: TrendingUp, change: "-5ms" }
-          ]
-        }
-
-      case "SUPPORT":
-        return {
-          title: "Support Dashboard",
-          description: "Customer support and issue resolution",
-          color: "from-pink-600 to-pink-700",
-          icon: HeadphonesIcon,
-          features: [
-            { name: "Ticket Management", icon: FileText, description: "Manage support tickets" },
-            { name: "Live Chat", icon: Bell, description: "Handle live chat support" },
-            { name: "Knowledge Base", icon: FileText, description: "Maintain help articles" },
-            { name: "Customer Feedback", icon: Users, description: "Collect customer feedback" },
-            { name: "Escalation Management", icon: TrendingUp, description: "Handle escalations" },
-            { name: "Performance Metrics", icon: BarChart3, description: "Track support metrics" }
-          ],
-          stats: [
-            { title: "Open Tickets", value: "34", icon: FileText, change: "+7%" },
-            { title: "Avg Response Time", value: "1.2hrs", icon: RefreshCw, change: "-15min" },
-            { title: "Customer Rating", value: "4.7/5", icon: Users, change: "+0.1%" },
-            { title: "Resolved Today", value: "89", icon: HeadphonesIcon, change: "+23%" }
-          ]
-        }
-
-      case "VIEWER":
-        return {
-          title: "Viewer Dashboard",
-          description: "Read-only access to reports and analytics",
-          color: "from-gray-600 to-gray-700",
-          icon: Eye,
-          features: [
-            { name: "View Reports", icon: BarChart3, description: "Access system reports" },
-            { name: "Analytics Dashboard", icon: TrendingUp, description: "View analytics data" },
-            { name: "Transaction Logs", icon: FileText, description: "View transaction history" },
-            { name: "User Activity", icon: Activity, description: "Monitor user activities" },
-            { name: "Export Data", icon: FileText, description: "Export reports" },
-            { name: "Notifications", icon: Bell, description: "Manage notifications" }
-          ],
-          stats: [
-            { title: "Total Reports", value: "120", icon: BarChart3, change: "+5%" },
-            { title: "Active Users", value: "234", icon: Users, change: "+10%" },
-            { title: "Transaction Count", value: "567", icon: CreditCard, change: "+15%" },
-            { title: "Alerts", value: "8", icon: Bell, change: "-2%" }
           ]
         }
 
@@ -286,6 +277,7 @@ export default function RoleDashboardPage() {
   const recentTransactions = dashboardData?.recentTransactions || []
   const quickActions = dashboardData?.quickActions || []
   const roleConfig = getRoleConfig(role)
+  const sidebarLinks = getSidebarLinks(role)
 
   return (
     <div className="flex min-h-screen bg-slate-950">

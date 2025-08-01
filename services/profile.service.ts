@@ -1,3 +1,4 @@
+updated-code
 export class ProfileService {
   static async getUserProfile(userId: string) {
     console.log("👤 ProfileService: Getting user profile for:", userId)
@@ -102,5 +103,17 @@ export class ProfileService {
       inviteUrl: `${window.location.origin}/invite/${inviteToken}`,
       message: "Staff member invited successfully",
     }
+  }
+
+  static async inviteUser(email: string, role: string) {
+    console.log("Inviting user:", email, "as", role);
+    const inviteToken = `role_${role}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    return {
+      success: true,
+      inviteToken,
+      inviteUrl: `${window.location.origin}/invite/${inviteToken}`,
+      message: "User invited successfully",
+    };
   }
 }

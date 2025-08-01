@@ -173,4 +173,43 @@ export class AuthService {
   static getInvitedUsersList() {
     return this.getInvitedUsers()
   }
+
+  static async createUserAccount(userData: any) {
+    // Simulate account creation
+    const userAccount = {
+      ...userData,
+      role: userData.role,
+      // other user data
+    };
+
+    // Redirect based on role
+    let redirectUrl = "/login";
+    switch (userAccount.role) {
+      case "PARENT_ADMIN":
+        redirectUrl = "/Roles/SuperAdmin/dashboard";
+        break;
+      case "MERCHANT":
+        redirectUrl = "/Roles/Merchant/dashboard";
+        break;
+      case "DEVELOPER":
+        redirectUrl = "/Roles/Developer/dashboard";
+        break;
+      case "REFUND_MANAGER":
+        redirectUrl = "/Roles/RefundManager/dashboard";
+        break;
+      case "STAFF":
+        redirectUrl = "/Roles/Staff/dashboard";
+        break;
+      case "SUB_ADMIN":
+        redirectUrl = "/Roles/SubAdmin/dashboard";
+        break;
+      case "SUPPORT":
+        redirectUrl = "/Roles/Support/dashboard";
+        break;
+      default:
+        redirectUrl = "/login";
+    }
+
+    return { success: true, redirectUrl };
+  }
 }

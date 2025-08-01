@@ -62,33 +62,86 @@ export default function InviteAcceptPage() {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role?.toUpperCase()) {
-      case "ADMIN":
+      case "PARENT_ADMIN":
+      case "SUPER_ADMIN":
         return "bg-red-600 hover:bg-red-700"
+      case "SUB_ADMIN":
+        return "bg-orange-600 hover:bg-orange-700"
       case "MERCHANT":
-        return "bg-blue-600 hover:bg-blue-700"
+        return "bg-emerald-600 hover:bg-emerald-700"
       case "STAFF":
-        return "bg-green-600 hover:bg-green-700"
+        return "bg-indigo-600 hover:bg-indigo-700"
       case "REFUND_MANAGER":
-        return "bg-yellow-600 hover:bg-yellow-700"
-      case "DEVELOPER":
         return "bg-purple-600 hover:bg-purple-700"
+      case "DEVELOPER":
+        return "bg-blue-600 hover:bg-blue-700"
       case "SUPPORT":
-        return "bg-pink-600 hover:bg-pink-700"
-      default:
+        return "bg-green-600 hover:bg-green-700"
+      case "VIEWER":
         return "bg-gray-600 hover:bg-gray-700"
+      default:
+        return "bg-slate-600 hover:bg-slate-700"
+    }
+  }
+
+  const getRoleDisplayName = (role: string) => {
+    switch (role?.toUpperCase()) {
+      case "PARENT_ADMIN":
+      case "SUPER_ADMIN":
+        return "Super Admin"
+      case "SUB_ADMIN":
+        return "Sub Administrator"
+      case "MERCHANT":
+        return "Merchant"
+      case "STAFF":
+        return "Staff Member"
+      case "REFUND_MANAGER":
+        return "Refund Manager"
+      case "DEVELOPER":
+        return "Developer"
+      case "SUPPORT":
+        return "Support Agent"
+      case "VIEWER":
+        return "Viewer"
+      default:
+        return role
+    }
+  }
+
+  const getRoleDashboardPath = (role: string) => {
+    const normalizedRole = role?.toUpperCase()
+    switch (normalizedRole) {
+      case "PARENT_ADMIN":
+      case "SUPER_ADMIN":
+        return "/Roles/SUPER_ADMIN/dashboard"
+      case "SUB_ADMIN":
+        return "/Roles/SUB_ADMIN/dashboard"
+      case "MERCHANT":
+        return "/Roles/MERCHANT/dashboard"
+      case "STAFF":
+        return "/Roles/STAFF/dashboard"
+      case "REFUND_MANAGER":
+        return "/Roles/REFUND_MANAGER/dashboard"
+      case "DEVELOPER":
+        return "/Roles/DEVELOPER/dashboard"
+      case "SUPPORT":
+        return "/Roles/SUPPORT/dashboard"
+      case "VIEWER":
+        return "/Roles/VIEWER/dashboard"
+      default:
+        return "/dashboard"
     }
   }
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
     try {
       const userData = {
         firstName,
         lastName,
         email: inviteData.email,
-        role: inviteData.role, // ✅ always use invited role
+        role: inviteData.role,
         contactMethod,
         contactValue,
         inviteToken: params.token,
@@ -137,11 +190,10 @@ export default function InviteAcceptPage() {
         assignedRole: inviteData.role,
       })
       setStep("credentials")
-      setLoginId(credentials.uniqueId)
 
       toast({
         title: "Account created",
-        description: `Your ${inviteData.role} account has been created successfully.`,
+        description: `Your ${getRoleDisplayName(inviteData.role)} account has been created successfully.`,
       })
     } catch (error) {
       toast({
@@ -149,9 +201,9 @@ export default function InviteAcceptPage() {
         description: "Failed to create account. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -164,11 +216,12 @@ export default function InviteAcceptPage() {
       if (result.success) {
         toast({
           title: "Login successful",
-          description: `Welcome as ${result.user.role}!`,
+          description: `Welcome as ${getRoleDisplayName(result.user.role)}!`,
         })
 
-        //  Redirect dynamically to correct role dashboard
-        router.push(`/Roles/${result.user.role}/dashboard`)
+        // Redirect to role-specific dashboard
+        const dashboardPath = getRoleDashboardPath(result.user.role)
+        router.push(dashboardPath)
       } else {
         toast({
           title: "Login failed",
@@ -215,7 +268,7 @@ export default function InviteAcceptPage() {
                 <CheckCircle className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold text-white">Join PayFlow</CardTitle>
-              <p className="text-slate-400">You've been invited to join {inviteData.companyName}</p>
+              <p className="text-slate-400">You've been invited to join {inviteData.companyName || "the platform"}</p>
             </CardHeader>
             <CardContent>
               <div className="mb-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
@@ -228,12 +281,12 @@ export default function InviteAcceptPage() {
                     <span className="text-slate-400 text-sm">Role:</span>
                     <Badge className={`${getRoleBadgeColor(inviteData.role)} text-white`}>
                       <Shield className="h-3 w-3 mr-1" />
-                      {inviteData.role}
+                      {getRoleDisplayName(inviteData.role)}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 text-sm">Invited by:</span>
-                    <span className="text-slate-200 text-sm font-medium">{inviteData.invitedBy}</span>
+                    <span className="text-slate-200 text-sm font-medium">{inviteData.invitedBy || "Admin"}</span>
                   </div>
                 </div>
               </div>
@@ -331,9 +384,9 @@ export default function InviteAcceptPage() {
                 <Mail className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold text-white">Credentials Sent!</CardTitle>
-              <p className="text-slate-400">
+              <div className="text-slate-400">
                 Your {inviteData.role} login credentials have been sent to your {contactMethod}
-              </p>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {generatedCredentials && (
@@ -345,13 +398,13 @@ export default function InviteAcceptPage() {
                   <p className="text-sm text-slate-200">
                     <strong>Password:</strong> {generatedCredentials.tempPassword}
                   </p>
-                  <p className="text-sm text-slate-200 flex items-center">
+                  <div className="text-sm text-slate-200 flex items-center">
                     <strong>Role:</strong>
                     <Badge className={`${getRoleBadgeColor(generatedCredentials.assignedRole)} ml-2 text-white`}>
                       <Shield className="h-3 w-3 mr-1" />
-                      {generatedCredentials.assignedRole}
+                      {getRoleDisplayName(generatedCredentials.assignedRole)}
                     </Badge>
-                  </p>
+                  </div>
                 </div>
               )}
               <Button onClick={() => setStep("login")} className="w-full bg-green-600 hover:bg-green-700">
@@ -369,14 +422,14 @@ export default function InviteAcceptPage() {
                 <User className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold text-white">Login to PayFlow</CardTitle>
-              <p className="text-slate-400">
+              <div className="text-slate-400 flex flex-wrap items-center justify-center">
                 Enter your{" "}
                 <Badge className={`${getRoleBadgeColor(inviteData.role)} mx-1 text-white`}>
                   <Shield className="h-3 w-3 mr-1" />
-                  {inviteData.role}
-                </Badge>{" "}
-                credentials sent to your {contactMethod}
-              </p>
+                  {getRoleDisplayName(inviteData.role)}
+                </Badge>
+                {" "}credentials sent to your {contactMethod}
+              </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-4">
