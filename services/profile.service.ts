@@ -1,4 +1,3 @@
-updated-code
 export class ProfileService {
   static async getUserProfile(userId: string) {
     console.log("👤 ProfileService: Getting user profile for:", userId)
